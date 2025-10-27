@@ -11,25 +11,25 @@ namespace Worker.BackgroundServices
         ILogger<MaterialsConsumer> logger,
         IHostApplicationLifetime applicationLifetime) : BackgroundService
     {
+        private readonly Faker<Material> _materialFaker = new Faker<Material>("pt_BR")
+            .RuleFor(m => m.Id, _ => Guid.NewGuid())
+            .RuleFor(m => m.Deleted, _ => false)
+            .RuleFor(m => m.CreatedAt, _ => DateTime.UtcNow)
+            .RuleFor(m => m.CreatedBy, _ => Guid.NewGuid())
+            .RuleFor(m => m.ModifiedAt, _ => null)
+            .RuleFor(m => m.ModifiedBy, _ => null)
+            .RuleFor(m => m.Name, f => f.Commerce.ProductName())
+            .RuleFor(m => m.Description, f => f.Commerce.ProductDescription())
+            .RuleFor(m => m.Price, f => Math.Round(f.Random.Decimal(1, 2000), 2))
+            .RuleFor(m => m.StockQuantity, f => f.Random.Int(0, 500));
+
         protected override async Task ExecuteAsync(CancellationToken stoppingToken)
         {
             try
             {
                 while (!stoppingToken.IsCancellationRequested)
                 {
-                    var faker = new Faker<Material>("pt_BR")
-                        .RuleFor(m => m.Id, f => Guid.NewGuid())
-                        .RuleFor(m => m.Deleted, f => false)
-                        .RuleFor(m => m.CreatedAt, f => DateTime.UtcNow)
-                        .RuleFor(m => m.CreatedBy, f => Guid.NewGuid())
-                        .RuleFor(m => m.ModifiedAt, f => null)
-                        .RuleFor(m => m.ModifiedBy, f => null)
-                        .RuleFor(m => m.Name, f => f.Commerce.ProductName())
-                        .RuleFor(m => m.Description, f => f.Commerce.ProductDescription())
-                        .RuleFor(m => m.Price, f => Math.Round(f.Random.Decimal(1, 2000), 2))
-                        .RuleFor(m => m.StockQuantity, f => f.Random.Int(0, 500));
-
-                    var material = faker.Generate();
+                    var material = _materialFaker.Generate();
 
                     using var scope = serviceProvider.CreateScope();
                     var useCase = scope.ServiceProvider.GetRequiredService<ICreateMaterialUseCase>();
