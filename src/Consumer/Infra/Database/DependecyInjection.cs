@@ -10,7 +10,13 @@ public static class DependecyInjection
 {
     public static void AddInfraDatabase(this IServiceCollection services, IConfiguration configuration)
     {
-        services.AddDbContext<ApplicationDbContext>(options => options.UseNpgsql(configuration.GetConnectionString("DefaultConnection")));
+        services.AddDbContext<ApplicationDbContext>(options =>
+            options.UseNpgsql(
+                configuration.GetConnectionString("DefaultConnection"),
+                npgsqlOptions => npgsqlOptions.EnableRetryOnFailure(
+                    maxRetryCount: 5,
+                    maxRetryDelay: TimeSpan.FromSeconds(10),
+                    errorCodesToAdd: null)));
 
         services.AddHealthChecks().AddDbContextCheck<ApplicationDbContext>(name: "Database", failureStatus: HealthStatus.Unhealthy, tags: ["ready"]);
 

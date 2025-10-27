@@ -12,4 +12,7 @@ public class MaterialRepository(ApplicationDbContext context) : IMaterialReposit
 
         await context.SaveChangesAsync(cancellationToken);
     }
+
+    public Task<bool> ExistsAsync(Guid id, CancellationToken cancellationToken = default)
+        => _materials.AnyAsync(material => material.Id == id, cancellationToken);
 }
