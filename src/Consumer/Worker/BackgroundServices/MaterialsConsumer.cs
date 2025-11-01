@@ -1,6 +1,8 @@
 ﻿using Bogus;
 using Domain.Contracts;
 using Domain.Entities;
+using Microsoft.Extensions.DependencyInjection;
+using Microsoft.Extensions.Diagnostics.HealthChecks;
 using Microsoft.Extensions.Options;
 
 namespace Worker.BackgroundServices
@@ -27,6 +29,19 @@ namespace Worker.BackgroundServices
         {
             try
             {
+                using (var healthScope = serviceProvider.CreateScope())
+                {
+                    var healthCheckService = healthScope.ServiceProvider.GetRequiredService<HealthCheckService>();
+                    var healthReport = await healthCheckService.CheckHealthAsync(healthCheck => healthCheck.Tags.Contains("ready"), stoppingToken);
+
+                    if (healthReport.Status != HealthStatus.Healthy)
+                    {
+                        logger.LogError("Database health check failed with status {Status}. Stopping application ...", healthReport.Status);
+                        applicationLifetime.StopApplication();
+                        return;
+                    }
+                }
+
                 while (!stoppingToken.IsCancellationRequested)
                 {
                     var material = _materialFaker.Generate();
